@@ -1,62 +1,78 @@
 # 부록 A: CLI 레퍼런스
 
-Claude Code의 모든 명령어, 옵션, 슬래시 커맨드, 환경 변수를 체계적으로 정리한 레퍼런스 가이드입니다.
+Claude Code의 모든 명령어, 옵션, 슬래시 명령어, 환경 변수, 종료 코드를 종합 정리한 레퍼런스입니다.
 
 ---
 
 ## 1. 기본 실행 명령어
 
-### `claude` - 대화형(Interactive) 모드
+### `claude` - 대화형 모드
 
-터미널에서 Claude Code를 대화형으로 실행합니다.
+터미널에서 대화형 REPL 세션을 시작합니다.
 
 ```bash
 # 기본 실행
 claude
 
 # 초기 프롬프트와 함께 실행
-claude "프로젝트 구조를 분석해줘"
+claude "이 프로젝트의 구조를 설명해줘"
 
-# 이전 대화 이어서 진행
-claude --continue
-
-# 가장 최근 대화를 이어서 진행
-claude --resume
+# 특정 디렉터리에서 실행
+cd /my/project && claude
 ```
 
-대화형 모드에서는 자유롭게 질문하고 Claude의 응답을 확인하며, 추가 지시를 내릴 수 있습니다.
+대화형 모드에서는 자유롭게 메시지를 입력하고, 슬래시 명령어를 사용하며, Claude와 실시간으로 상호작용할 수 있습니다.
 
-### `claude -p` - 비대화형(Non-Interactive) 모드
+### `claude -p` (또는 `--print`) - 비대화형 모드
 
-스크립트, CI/CD 파이프라인, 자동화 작업에 적합한 비대화형 모드입니다.
+단일 프롬프트를 실행하고 결과를 출력한 뒤 즉시 종료합니다. 스크립트나 CI/CD 파이프라인에 적합합니다.
 
 ```bash
-# 단일 질문에 대한 답변 출력
-claude -p "이 프로젝트의 주요 의존성을 나열해줘"
+# 단일 질문
+claude -p "이 함수의 시간 복잡도는?"
 
 # 파이프와 함께 사용
 cat error.log | claude -p "이 에러 로그를 분석해줘"
 
-# JSON 출력 형식
-claude -p "함수 목록을 JSON으로 정리해줘" --output-format json
+# 파일 내용 전달
+claude -p "이 코드를 리뷰해줘" < main.py
 
-# 스트리밍 JSON 출력
-claude -p "코드를 리팩토링해줘" --output-format stream-json
+# JSON 출력
+claude -p "package.json의 의존성을 나열해줘" --output-format json
 ```
 
-**출력 형식 옵션:**
+### `claude -c` (또는 `--continue`) - 이전 대화 이어가기
 
-| 옵션 | 설명 |
-|------|------|
-| `--output-format text` | 일반 텍스트 출력 (기본값) |
-| `--output-format json` | JSON 형식으로 전체 결과 출력 |
-| `--output-format stream-json` | 스트리밍 JSON 형식 출력 |
+가장 최근 대화를 이어서 진행합니다.
+
+```bash
+# 마지막 대화 이어가기
+claude -c
+
+# 마지막 대화에 메시지 추가
+claude -c "아까 만든 함수에 에러 핸들링을 추가해줘"
+
+# 비대화형에서도 사용 가능
+claude -p -c "이전 결과를 표로 정리해줘"
+```
+
+### `claude -r` (또는 `--resume`) - 특정 대화 재개
+
+세션 ID를 지정하여 특정 대화를 재개합니다.
+
+```bash
+# 세션 ID로 재개
+claude -r abc123def456
+
+# 메시지와 함께 재개
+claude -r abc123def456 "그 작업을 계속해줘"
+```
 
 ---
 
 ## 2. 모델 선택
 
-### `claude --model` / `claude -m`
+### `--model` 플래그
 
 사용할 모델을 지정합니다.
 
@@ -64,466 +80,344 @@ claude -p "코드를 리팩토링해줘" --output-format stream-json
 # 특정 모델 지정
 claude --model claude-sonnet-4-20250514
 
-# 축약 옵션 사용
-claude -m claude-sonnet-4-20250514
+# Opus 모델 사용
+claude --model claude-opus-4-20250514
 
-# 비대화형 모드와 조합
-claude -p -m claude-sonnet-4-20250514 "이 코드를 최적화해줘"
+# 비대화형에서 모델 지정
+claude -p --model claude-sonnet-4-20250514 "코드를 최적화해줘"
 ```
 
 **사용 가능한 모델 예시:**
 
 | 모델 ID | 설명 |
 |---------|------|
-| `claude-sonnet-4-20250514` | Claude Sonnet 4 |
-| `claude-opus-4-20250514` | Claude Opus 4 |
-
-> **참고:** 사용 가능한 모델은 구독 플랜과 API 설정에 따라 다를 수 있습니다.
+| `claude-sonnet-4-20250514` | Sonnet 4 - 균형 잡힌 성능 |
+| `claude-opus-4-20250514` | Opus 4 - 최고 성능 |
+| `claude-haiku-3-5-20241022` | Haiku 3.5 - 빠른 응답 |
 
 ---
 
-## 3. 설정 관리
-
-### `claude config`
+## 3. 구성 관리: `claude config`
 
 Claude Code의 설정을 관리합니다.
 
 ```bash
-# 설정 값 목록 보기
-claude config list
-
-# 특정 설정 값 확인
-claude config get theme
+# 설정 값 조회
+claude config get <key>
 
 # 설정 값 변경
-claude config set theme dark
+claude config set <key> <value>
 
-# 설정 값 삭제
-claude config remove theme
+# 설정 목록 보기
+claude config list
+
+# 설정 삭제
+claude config remove <key>
 ```
 
-**설정 범위(Scope):**
+### 주요 설정 키
+
+| 키 | 설명 | 예시 값 |
+|----|------|---------|
+| `model` | 기본 모델 | `claude-sonnet-4-20250514` |
+| `permissions` | 권한 모드 | `default`, `allowAll` |
+| `autoCompact` | 자동 컴팩션 | `true`, `false` |
+| `preferredNotifChannel` | 알림 채널 | `terminal`, `iterm2` |
+
+### 스코프 지정
 
 ```bash
-# 프로젝트 범위 설정 (현재 프로젝트에만 적용)
-claude config set --project preferredNotifChannel terminal
+# 프로젝트 로컬 설정
+claude config set --project model claude-sonnet-4-20250514
 
-# 전역 범위 설정 (모든 프로젝트에 적용)
-claude config set --global theme dark
+# 전역 설정
+claude config set --global model claude-opus-4-20250514
 ```
-
-| 범위 | 플래그 | 설명 |
-|------|--------|------|
-| 프로젝트 | `--project` | 현재 프로젝트의 `.claude/` 디렉토리에 저장 |
-| 전역 | `--global` | `~/.claude/` 디렉토리에 저장 |
-
-**주요 설정 항목:**
-
-| 설정 키 | 값 예시 | 설명 |
-|---------|---------|------|
-| `theme` | `dark`, `light`, `light-daltonized`, `dark-daltonized` | 터미널 테마 |
-| `preferredNotifChannel` | `terminal`, `iterm2`, `terminal_bell` | 알림 채널 설정 |
-| `verbose` | `true`, `false` | 상세 출력 모드 |
-| `autoUpdaterStatus` | `on`, `off` | 자동 업데이트 여부 |
 
 ---
 
-## 4. MCP 서버 관리
+## 4. MCP 서버 관리: `claude mcp`
 
-### `claude mcp`
-
-Model Context Protocol(MCP) 서버를 관리합니다.
+Model Context Protocol 서버를 추가, 제거, 관리합니다.
 
 ```bash
+# MCP 서버 추가
+claude mcp add <name> <command> [args...]
+
+# 예시: GitHub MCP 서버 추가
+claude mcp add github npx -y @modelcontextprotocol/server-github
+
+# stdio 타입으로 추가 (기본값)
+claude mcp add myserver -t stdio -- node /path/to/server.js
+
+# SSE 타입으로 추가
+claude mcp add remote-server -t sse https://example.com/mcp
+
+# 환경 변수와 함께 추가
+claude mcp add github -e GITHUB_TOKEN=ghp_xxxx -- npx -y @modelcontextprotocol/server-github
+
 # MCP 서버 목록 보기
 claude mcp list
 
-# MCP 서버 추가 (stdio 방식)
-claude mcp add my-server -- node /path/to/server.js
-
-# MCP 서버 추가 (SSE 방식)
-claude mcp add my-sse-server --transport sse https://example.com/mcp
-
-# MCP 서버 상세 정보 확인
-claude mcp get my-server
+# MCP 서버 상세 정보
+claude mcp get <name>
 
 # MCP 서버 제거
-claude mcp remove my-server
+claude mcp remove <name>
+
+# 스코프 지정 (프로젝트/글로벌)
+claude mcp add --scope project myserver node server.js
+claude mcp add --scope global myserver node server.js
 ```
-
-**범위 지정:**
-
-```bash
-# 프로젝트 범위 (기본값)
-claude mcp add --scope project my-server -- node server.js
-
-# 전역 범위
-claude mcp add --scope global my-server -- node server.js
-```
-
-**환경 변수와 함께 사용:**
-
-```bash
-claude mcp add my-server \
-  -e API_KEY=abc123 \
-  -e DB_HOST=localhost \
-  -- node /path/to/server.js
-```
-
-**전송 방식:**
-
-| 옵션 | 설명 |
-|------|------|
-| `--transport stdio` | 표준 입출력 방식 (기본값) |
-| `--transport sse` | Server-Sent Events 방식 |
 
 ---
 
-## 5. 진단 도구
+## 5. 진단: `claude doctor`
 
-### `claude doctor`
-
-Claude Code 설치 환경과 설정을 진단합니다.
+설치 상태, 인증, 환경 구성을 진단합니다.
 
 ```bash
-# 전체 진단 실행
 claude doctor
 ```
 
 **진단 항목:**
-
 - Node.js 버전 확인
-- 인증 상태 확인 (API 키 또는 OAuth)
-- 네트워크 연결 상태
-- MCP 서버 연결 상태
-- 설정 파일 유효성
-- 권한 설정 확인
-
-```
-# 출력 예시
-Claude Code Doctor
-==================
-✓ Node.js version: v20.11.0 (>=18.0.0 required)
-✓ Authentication: Valid API key configured
-✓ Network: Connected to Anthropic API
-✓ MCP servers: 2/2 connected
-✓ Configuration: Valid
-```
+- 인증 상태 (API 키 또는 OAuth)
+- 네트워크 연결
+- MCP 서버 상태
+- 권한 설정
+- 최신 버전 확인
 
 ---
 
-## 6. 슬래시 커맨드
+## 6. 슬래시 명령어
 
-대화형 모드에서 사용할 수 있는 슬래시 커맨드입니다.
+대화형 모드에서 `/`로 시작하는 명령어를 사용할 수 있습니다.
 
-### `/help` - 도움말
-
-사용 가능한 커맨드와 도움말을 표시합니다.
-
-```
-> /help
-```
-
-### `/clear` - 대화 초기화
-
-현재 대화의 컨텍스트를 완전히 초기화합니다.
-
-```
-> /clear
-```
-
-> **참고:** `/clear`는 컨텍스트 윈도우를 완전히 비웁니다. 이전 대화 내용을 참조할 수 없게 되므로 주의하세요.
-
-### `/compact` - 대화 압축
-
-현재 대화를 요약하여 컨텍스트 사용량을 줄입니다.
-
-```
-# 기본 압축
-> /compact
-
-# 사용자 정의 요약 지침과 함께 압축
-> /compact 코드 변경 사항과 아직 해결되지 않은 이슈에 집중해서 요약해줘
-```
-
-**사용 시점:**
-- 컨텍스트 윈도우가 80% 이상 사용되었을 때
-- 대화가 길어져 응답 속도가 느려질 때
-- 주제를 전환하되 일부 맥락은 유지하고 싶을 때
-
-### `/exit` - 종료
-
-Claude Code 세션을 종료합니다.
-
-```
-> /exit
-```
-
-`Ctrl+C`를 두 번 누르거나 `Ctrl+D`로도 종료할 수 있습니다.
-
-### `/memory` - 메모리 편집
-
-프로젝트의 CLAUDE.md 메모리 파일을 편집합니다.
-
-```
-> /memory
-```
-
-CLAUDE.md 파일이 편집기에서 열리며, 프로젝트에 대한 지침과 규칙을 작성할 수 있습니다.
-
-### `/config` - 설정
-
-Claude Code 설정을 대화형으로 관리합니다.
-
-```
-> /config
-```
-
-### `/cost` - 비용 확인
-
-현재 세션의 토큰 사용량과 예상 비용을 표시합니다.
-
-```
-> /cost
-```
-
-```
-# 출력 예시
-Session Cost Summary
-====================
-Input tokens:  45,230
-Output tokens: 12,450
-Total cost:    $0.34
-```
-
-### `/doctor` - 진단
-
-대화형 모드 내에서 환경 진단을 실행합니다.
-
-```
-> /doctor
-```
-
-### `/model` - 모델 변경
-
-세션 중 사용 모델을 변경합니다.
-
-```
-> /model claude-sonnet-4-20250514
-
-> /model claude-opus-4-20250514
-```
-
-### `/permissions` - 권한 관리
-
-도구 사용 권한을 관리합니다.
-
-```
-> /permissions
-```
-
-허용 또는 거부할 도구와 경로 규칙을 설정할 수 있습니다.
-
----
-
-## 7. 슬래시 커맨드 요약 표
-
-| 커맨드 | 설명 | 사용 예시 |
+| 명령어 | 설명 | 사용 예시 |
 |--------|------|-----------|
-| `/help` | 도움말 표시 | `/help` |
-| `/clear` | 대화 초기화 | `/clear` |
-| `/compact` | 대화 압축 | `/compact` 또는 `/compact [지침]` |
-| `/exit` | 세션 종료 | `/exit` |
-| `/memory` | CLAUDE.md 편집 | `/memory` |
-| `/config` | 설정 관리 | `/config` |
-| `/cost` | 비용 확인 | `/cost` |
-| `/doctor` | 환경 진단 | `/doctor` |
-| `/model` | 모델 변경 | `/model [모델ID]` |
-| `/permissions` | 권한 관리 | `/permissions` |
+| `/help` | 사용 가능한 명령어 및 도움말 표시 | `/help` |
+| `/clear` | 대화 내역 초기화 | `/clear` |
+| `/compact` | 대화를 요약하여 컨텍스트 절약 | `/compact` 또는 `/compact 핵심 로직 위주로` |
+| `/exit` | Claude Code 종료 | `/exit` |
+| `/memory` | CLAUDE.md 메모리 파일 편집 | `/memory` |
+| `/config` | 설정 보기 및 변경 | `/config` |
+| `/cost` | 현재 세션의 토큰 사용량 및 비용 표시 | `/cost` |
+| `/doctor` | 환경 진단 실행 | `/doctor` |
+| `/model` | 사용 중인 모델 확인 및 변경 | `/model claude-opus-4-20250514` |
+| `/permissions` | 권한 설정 보기 및 변경 | `/permissions` |
+| `/diff` | 마지막 변경 사항의 diff 표시 | `/diff` |
+| `/review` | 코드 리뷰 요청 | `/review` |
+| `/undo` | 마지막 파일 변경 되돌리기 | `/undo` |
+| `/bug` | 버그 리포트 작성 | `/bug` |
+| `/login` | 인증 로그인 | `/login` |
+| `/logout` | 인증 로그아웃 | `/logout` |
+| `/pr-comments` | PR 코멘트 확인 | `/pr-comments` |
+| `/terminal-setup` | 터미널 키 바인딩 설정 | `/terminal-setup` |
+
+### 슬래시 명령어 상세
+
+#### `/compact` - 컨텍스트 압축
+
+컨텍스트 윈도우가 부족해질 때 대화를 요약합니다.
+
+```
+/compact
+/compact API 관련 내용 위주로 요약해줘
+```
+
+자동 컴팩션을 활성화하면 컨텍스트 한도에 도달할 때 자동으로 실행됩니다.
+
+```bash
+claude config set autoCompact true
+```
+
+#### `/memory` - 메모리 관리
+
+프로젝트의 CLAUDE.md 파일을 편집하여 Claude가 기억할 내용을 관리합니다.
+
+```
+/memory
+```
+
+이 명령어는 `CLAUDE.md` 파일을 에디터에서 열어줍니다. 여기에 프로젝트 규칙, 코딩 스타일, 자주 사용하는 명령어 등을 기록할 수 있습니다.
+
+---
+
+## 7. 플래그 및 옵션 종합 테이블
+
+| 플래그 | 단축 | 설명 |
+|--------|------|------|
+| `--print` | `-p` | 비대화형 모드 (결과 출력 후 종료) |
+| `--continue` | `-c` | 마지막 대화 이어가기 |
+| `--resume` | `-r` | 특정 세션 ID로 대화 재개 |
+| `--model` | | 사용할 모델 지정 |
+| `--output-format` | | 출력 형식 (`text`, `json`, `stream-json`) |
+| `--max-turns` | | 에이전트 루프 최대 턴 수 제한 |
+| `--system-prompt` | | 시스템 프롬프트 지정 (비대화형 전용) |
+| `--append-system-prompt` | | 기존 시스템 프롬프트에 추가 |
+| `--allowedTools` | | 허용할 도구 목록 지정 |
+| `--disallowedTools` | | 차단할 도구 목록 지정 |
+| `--permission-mode` | | 권한 모드 설정 |
+| `--input-format` | | 입력 형식 (`text`, `stream-json`) |
+| `--verbose` | | 상세 로그 출력 |
+| `--no-cache` | | 프롬프트 캐싱 비활성화 |
+| `--version` | `-v` | 버전 정보 표시 |
+| `--help` | `-h` | 도움말 표시 |
+| `--dangerously-skip-permissions` | | 모든 권한 확인 건너뛰기 (주의) |
+
+### `--output-format` 상세
+
+```bash
+# 일반 텍스트 (기본값)
+claude -p "안녕" --output-format text
+
+# JSON 형식 (메타데이터 포함)
+claude -p "안녕" --output-format json
+
+# 스트리밍 JSON (실시간 토큰 출력)
+claude -p "안녕" --output-format stream-json
+```
+
+**JSON 출력 예시:**
+```json
+{
+  "type": "result",
+  "result": "안녕하세요! 무엇을 도와드릴까요?",
+  "cost_usd": 0.003,
+  "duration_ms": 1200,
+  "num_turns": 1,
+  "session_id": "abc123"
+}
+```
+
+### `--max-turns` 사용
+
+```bash
+# 최대 3턴으로 제한
+claude -p --max-turns 3 "테스트를 작성하고 실행해줘"
+```
+
+### `--permission-mode` 옵션
+
+| 모드 | 설명 |
+|------|------|
+| `default` | 위험한 작업에 대해 확인 요청 |
+| `plan` | 읽기 전용 (파일 수정/명령 실행 불가) |
+| `bypassPermissions` | 모든 권한 자동 허용 (위험) |
 
 ---
 
 ## 8. 환경 변수
 
-Claude Code 동작을 제어하는 환경 변수입니다.
-
-### 인증 관련
+Claude Code의 동작을 환경 변수로 제어할 수 있습니다.
 
 | 환경 변수 | 설명 | 예시 |
 |-----------|------|------|
-| `ANTHROPIC_API_KEY` | Anthropic API 키 | `sk-ant-api03-...` |
-| `CLAUDE_CODE_USE_BEDROCK` | AWS Bedrock 사용 여부 | `1` |
-| `CLAUDE_CODE_USE_VERTEX` | Google Vertex AI 사용 여부 | `1` |
-| `ANTHROPIC_BASE_URL` | 커스텀 API 엔드포인트 URL | `https://custom.api.com` |
-
-### AWS Bedrock 관련
-
-| 환경 변수 | 설명 | 예시 |
-|-----------|------|------|
-| `AWS_REGION` | AWS 리전 | `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | AWS 액세스 키 ID | `AKIA...` |
-| `AWS_SECRET_ACCESS_KEY` | AWS 시크릿 액세스 키 | `wJal...` |
-| `AWS_SESSION_TOKEN` | AWS 세션 토큰 (임시 자격증명) | - |
-| `ANTHROPIC_MODEL` | 사용할 Bedrock 모델 ID | `us.anthropic.claude-...` |
-
-### Google Vertex AI 관련
-
-| 환경 변수 | 설명 | 예시 |
-|-----------|------|------|
-| `CLOUD_ML_REGION` | GCP 리전 | `us-east5` |
-| `ANTHROPIC_VERTEX_PROJECT_ID` | GCP 프로젝트 ID | `my-project-123` |
-
-### 동작 제어
-
-| 환경 변수 | 설명 | 예시 |
-|-----------|------|------|
+| `ANTHROPIC_API_KEY` | Anthropic API 키 | `sk-ant-...` |
+| `CLAUDE_CODE_USE_BEDROCK` | AWS Bedrock 사용 | `1` |
+| `CLAUDE_CODE_USE_VERTEX` | Google Vertex AI 사용 | `1` |
+| `ANTHROPIC_MODEL` | 기본 모델 지정 | `claude-sonnet-4-20250514` |
 | `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | 최대 출력 토큰 수 | `16384` |
-| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 비필수 트래픽 비활성화 | `1` |
-| `CLAUDE_CODE_SKIP_OOBE` | 초기 설정 화면 건너뛰기 | `1` |
+| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 텔레메트리 비활성화 | `1` |
+| `HTTP_PROXY` / `HTTPS_PROXY` | 프록시 서버 설정 | `http://proxy:8080` |
+| `NO_PROXY` | 프록시 예외 주소 | `localhost,127.0.0.1` |
+| `CLAUDE_CODE_API_TIMEOUT` | API 타임아웃 (밀리초) | `30000` |
 
-### 프록시 관련
-
-| 환경 변수 | 설명 | 예시 |
-|-----------|------|------|
-| `HTTP_PROXY` | HTTP 프록시 URL | `http://proxy:8080` |
-| `HTTPS_PROXY` | HTTPS 프록시 URL | `https://proxy:8443` |
-| `NO_PROXY` | 프록시 우회 대상 | `localhost,127.0.0.1` |
-
-**환경 변수 설정 예시:**
+### AWS Bedrock 설정
 
 ```bash
-# 일회성 설정
-ANTHROPIC_API_KEY=sk-ant-api03-xxx claude
-
-# 셸 프로파일에 영구 설정 (~/.bashrc 또는 ~/.zshrc)
-export ANTHROPIC_API_KEY="sk-ant-api03-xxx"
-
-# AWS Bedrock 사용
 export CLAUDE_CODE_USE_BEDROCK=1
 export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=AKIA...
+export AWS_SECRET_ACCESS_KEY=...
+claude
+```
+
+### Google Vertex AI 설정
+
+```bash
+export CLAUDE_CODE_USE_VERTEX=1
+export CLOUD_ML_REGION=us-east5
+export ANTHROPIC_VERTEX_PROJECT_ID=my-project-id
 claude
 ```
 
 ---
 
-## 9. 종료 코드 (Exit Codes)
+## 9. 종료 코드
 
-비대화형 모드(`claude -p`)에서 반환되는 종료 코드입니다.
+스크립트에서 Claude Code의 실행 결과를 판별할 때 사용합니다.
 
-| 종료 코드 | 의미 | 설명 |
-|-----------|------|------|
-| `0` | 성공 | 정상적으로 완료됨 |
-| `1` | 일반 오류 | 실행 중 오류 발생 |
-| `2` | 인증 오류 | API 키 또는 인증 문제 |
-
-**스크립트에서의 활용:**
+| 종료 코드 | 의미 |
+|-----------|------|
+| `0` | 정상 완료 |
+| `1` | 일반 오류 |
+| `2` | 인증 오류 또는 API 키 문제 |
 
 ```bash
-#!/bin/bash
-claude -p "테스트를 실행하고 결과를 알려줘"
-EXIT_CODE=$?
-
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "성공적으로 완료되었습니다."
-elif [ $EXIT_CODE -eq 2 ]; then
-    echo "인증 오류: API 키를 확인하세요."
+# 스크립트에서 종료 코드 활용
+claude -p "테스트를 실행해줘"
+if [ $? -eq 0 ]; then
+    echo "성공"
 else
-    echo "오류가 발생했습니다. (코드: $EXIT_CODE)"
+    echo "실패 (종료 코드: $?)"
 fi
 ```
 
 ---
 
-## 10. 플래그 및 옵션 레퍼런스
+## 10. 파이프라인 활용 예시
 
-### 전체 옵션 표
-
-| 플래그 | 축약 | 설명 | 예시 |
-|--------|------|------|------|
-| `--print` | `-p` | 비대화형 모드 실행 | `claude -p "질문"` |
-| `--model` | `-m` | 모델 지정 | `claude -m claude-sonnet-4-20250514` |
-| `--output-format` | | 출력 형식 지정 | `claude -p --output-format json` |
-| `--continue` | `-c` | 이전 대화 이어서 진행 | `claude --continue` |
-| `--resume` | `-r` | 대화 선택하여 이어가기 | `claude --resume` |
-| `--allowedTools` | | 허용 도구 목록 지정 | `claude --allowedTools "Bash,Read"` |
-| `--disallowedTools` | | 차단 도구 목록 지정 | `claude --disallowedTools "Write"` |
-| `--max-turns` | | 최대 턴 수 제한 | `claude -p --max-turns 10` |
-| `--system-prompt` | | 시스템 프롬프트 지정 | `claude -p --system-prompt "..."` |
-| `--permission-mode` | | 권한 모드 설정 | `claude --permission-mode plan` |
-| `--input-format` | | 입력 형식 지정 | `claude -p --input-format stream-json` |
-| `--verbose` | | 상세 출력 활성화 | `claude --verbose` |
-| `--version` | `-v` | 버전 정보 출력 | `claude --version` |
-| `--help` | `-h` | 도움말 출력 | `claude --help` |
-| `--add-dir` | | 추가 작업 디렉토리 지정 | `claude --add-dir /path/to/other` |
-
-### 권한 모드 옵션
-
-| 모드 | 설명 |
-|------|------|
-| `default` | 위험한 작업 시 사용자 확인 요청 (기본값) |
-| `plan` | 파일 읽기와 계획은 허용, 수정은 확인 필요 |
-| `bypassPermissions` | 모든 도구를 확인 없이 실행 (주의 필요) |
+### CI/CD 통합
 
 ```bash
-# Plan 모드로 실행
-claude --permission-mode plan
+# PR 리뷰 자동화
+git diff main...HEAD | claude -p "이 변경 사항을 리뷰해줘. 버그나 보안 이슈가 있는지 확인해줘"
 
-# 비대화형 모드에서 최대 턴 수 제한
-claude -p --max-turns 5 "테스트를 실행해줘"
+# 커밋 메시지 생성
+git diff --staged | claude -p "이 변경 사항에 적합한 커밋 메시지를 작성해줘" --output-format text
 
-# 특정 도구만 허용
-claude --allowedTools "Read,Grep,Glob"
+# 코드 품질 검사
+claude -p "src/ 디렉터리의 코드 품질을 분석하고 개선점을 알려줘" --max-turns 5
 ```
 
-### 파이프라인 조합 예시
+### 복합 파이프라인
 
 ```bash
-# Git diff를 분석하여 코드 리뷰
-git diff HEAD~1 | claude -p "이 변경 사항을 코드 리뷰해줘"
+# 에러 로그 분석 후 수정
+cat error.log | claude -p "이 에러의 원인을 분석하고 해결 방법을 알려줘"
 
-# 로그 파일 분석
-cat server.log | claude -p "에러 패턴을 분석하고 원인을 추정해줘"
-
-# 여러 파일을 컨텍스트로 전달
-cat src/main.ts src/config.ts | claude -p "이 코드의 아키텍처를 설명해줘"
-
-# 결과를 파일로 저장
-claude -p "README 초안을 작성해줘" > README_draft.md
-
-# JSON 출력을 jq로 파싱
-claude -p --output-format json "프로젝트 구조 분석" | jq '.result'
+# 여러 파일 분석
+find . -name "*.test.js" -exec cat {} + | claude -p "테스트 커버리지 개선 방안을 제안해줘"
 ```
 
 ---
 
-## 11. 빠른 참조 카드
+## 요약 퀵 레퍼런스
 
+```bash
+# 대화형 세션
+claude
+
+# 비대화형 질문
+claude -p "질문"
+
+# 이전 대화 이어가기
+claude -c
+
+# 모델 지정
+claude --model claude-opus-4-20250514
+
+# JSON 출력
+claude -p --output-format json "질문"
+
+# MCP 서버 추가
+claude mcp add <name> <command>
+
+# 환경 진단
+claude doctor
+
+# 설정 변경
+claude config set <key> <value>
 ```
-# 기본 실행
-claude                              # 대화형 모드
-claude "질문"                       # 초기 프롬프트와 함께 시작
-claude -p "질문"                    # 비대화형 모드
-
-# 대화 관리
-claude --continue                   # 마지막 대화 이어가기
-claude --resume                     # 대화 선택하여 이어가기
-
-# 설정
-claude config list                  # 설정 목록
-claude config set key value         # 설정 변경
-claude mcp list                     # MCP 서버 목록
-claude mcp add name -- cmd args     # MCP 서버 추가
-
-# 진단
-claude doctor                       # 환경 진단
-claude --version                    # 버전 확인
-
-# 슬래시 커맨드 (대화형 모드 내)
-/help    /clear    /compact    /exit
-/memory  /config   /cost       /doctor
-/model   /permissions
-```
-
----
-
-> **팁:** `claude --help`를 실행하면 항상 최신 옵션 목록을 확인할 수 있습니다. 새로운 버전에서 추가된 옵션이 있을 수 있으므로 정기적으로 확인하세요.
